@@ -65,6 +65,25 @@ nav{
 .btn-sync-action.secondary{background:var(--g100);color:var(--g700);border:1px solid var(--g200);}
 .btn-sync-action.secondary:hover{background:var(--g200);}
 
+/* ── SYNC BANNER (page accueil) ──────── */
+.sync-banner{border-radius:var(--r);padding:13px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:600;transition:all .3s;}
+.sync-banner.setup{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;color:#92400e;}
+.sync-banner.ok{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;color:#15803d;}
+.sync-banner.err{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1.5px solid #fca5a5;color:#991b1b;}
+.sync-banner.busy{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;color:#1e40af;}
+.sync-banner-left{display:flex;align-items:center;gap:10px;}
+.sync-banner-icon{font-size:18px;flex-shrink:0;}
+.sync-banner-text strong{display:block;font-size:13px;font-weight:800;margin-bottom:1px;}
+.sync-banner-text span{font-size:11px;font-weight:500;opacity:.85;}
+.sync-banner-btn{padding:7px 14px;border:none;border-radius:var(--r-sm);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s;}
+.sync-banner.setup .sync-banner-btn{background:#f59e0b;color:#fff;}
+.sync-banner.setup .sync-banner-btn:hover{background:#d97706;}
+.sync-banner.ok .sync-banner-btn{background:#16a34a;color:#fff;}
+.sync-banner.ok .sync-banner-btn:hover{background:#15803d;}
+.sync-banner.err .sync-banner-btn{background:#dc2626;color:#fff;}
+.sync-banner.err .sync-banner-btn:hover{background:#b91c1c;}
+.sync-banner.busy .sync-banner-btn{background:#3b82f6;color:#fff;opacity:.7;cursor:wait;}
+
 /* ── PAGES ───────────────────────────── */
 .page{display:none;}
 .page.active{display:block;}
@@ -270,6 +289,9 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
 ══════════════════════════════════════ -->
 <div class="page active" id="page-saisie">
 <div class="wrap">
+  <!-- SYNC BANNER -->
+  <div id="sync-banner" style="display:none"></div>
+
   <!-- KPIs -->
   <div class="kpi-row">
     <div class="kpi k-cp"><div class="kpi-glow"></div><div class="kpi-lbl">📤 Charges Perso</div><div class="kpi-val" id="k-cp">0,00 €</div><div class="kpi-sub">Carte personnelle</div></div>
@@ -647,9 +669,11 @@ document.addEventListener('DOMContentLoaded', () => {
   applyNavTitles();
   rebuildFormDropdowns();
   loadSettingsUI();
+  renderSyncBanner();
   // Try loading from cloud first, fallback to local
   if (cfg.syncUrl) {
     loadFromCloud(true);
+    startAutoSync(); // rafraîchissement automatique toutes les 30s
   } else {
     if (!entries.length) loadExamples();
     else render();
@@ -1004,6 +1028,9 @@ function setSyncDot(state){
   if(btn)btn.className='btn-nav'+(state==='ok'?' sync-ok':state==='err'?' sync-err':state==='busy'?' sync-busy':'');
 }
 
+let _lastSyncTime = null;
+let _autoSyncTimer = null;
+
 function updateSyncUI(){
   const bar=document.getElementById('sync-status-bar');
   const icon=document.getElementById('sync-status-icon');
@@ -1017,8 +1044,78 @@ function updateSyncUI(){
   } else {
     bar.className='sync-status-bar ok';
     icon.textContent='✅';
-    text.textContent='URL configurée — synchronisation automatique activée.';
+    text.textContent='URL configurée — synchronisation automatique activée (toutes les 30s).';
     setSyncDot('ok');
+  }
+  renderSyncBanner();
+}
+
+function renderSyncBanner(){
+  const el=document.getElementById('sync-banner');
+  if(!el)return;
+  if(!cfg.syncUrl){
+    // Pas configuré : invite à configurer
+    el.style.display='flex';
+    el.className='sync-banner setup';
+    el.innerHTML=`
+      <div class="sync-banner-left">
+        <div class="sync-banner-icon">⚠️</div>
+        <div class="sync-banner-text">
+          <strong>Synchronisation cloud non configurée</strong>
+          <span>Les données ne sont pas partagées entre les membres. Configurez Google Sheets pour partager en temps réel.</span>
+        </div>
+      </div>
+      <button class="sync-banner-btn" onclick="goPageByName('reglages'); setTimeout(()=>showPanel('sync',document.querySelector('[onclick*=sync]')),100)">🔗 Configurer la sync</button>`;
+  } else {
+    // Configuré : affiche le statut
+    const lastStr=_lastSyncTime?'— Dernière sync : '+_lastSyncTime.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'...';
+    el.style.display='flex';
+    el.className='sync-banner ok';
+    el.innerHTML=`
+      <div class="sync-banner-left">
+        <div class="sync-banner-icon">🔄</div>
+        <div class="sync-banner-text">
+          <strong>Synchronisation automatique activée</strong>
+          <span>Partage en temps réel avec l'équipe ${lastStr}</span>
+        </div>
+      </div>
+      <button class="sync-banner-btn" onclick="manualSync()">🔄 Actualiser</button>`;
+  }
+}
+
+function goPageByName(id){
+  const btn=document.querySelector(`.ntab[onclick*="'${id}'"]`);
+  if(btn)btn.click();
+}
+
+function startAutoSync(){
+  if(_autoSyncTimer)clearInterval(_autoSyncTimer);
+  // Sync automatique toutes les 30 secondes
+  _autoSyncTimer=setInterval(()=>{
+    if(cfg.syncUrl) silentSync();
+  }, 30000);
+}
+
+async function silentSync(){
+  // Sync silencieuse : pas de flash, juste mise à jour des données et de la banniere
+  if(!cfg.syncUrl)return;
+  setSyncDot('busy');
+  try{
+    const r=await fetch(cfg.syncUrl+'?t='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      entries=[...data].reverse();
+      nextId=Math.max(...entries.map(e=>e.id))+1;
+      saveEntries();
+      render();
+    }
+    _lastSyncTime=new Date();
+    setSyncDot('ok');
+    renderSyncBanner();
+  }catch(err){
+    setSyncDot('err');
+    console.warn('Auto-sync failed:',err);
   }
 }
 
@@ -1116,13 +1213,19 @@ async function testAndSaveSync(){
     const r=await fetch(url+'?t='+Date.now());
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
+    _lastSyncTime=new Date();
     setSyncDot('ok');
     updateSyncStatusBar('ok','✅','Connexion réussie ! '+(Array.isArray(data)?data.length+' entrée(s) trouvée(s) dans le cloud.':'Script connecté.'));
     showFlash('✅','Sync Cloud configurée avec succès !','ok');
+    renderSyncBanner(); // met à jour la bannière sur la page d'accueil
+    startAutoSync();   // démarre le rafraîchissement automatique
+    // Charge les données depuis le cloud
+    await loadFromCloud(false);
   }catch(err){
     setSyncDot('err');
     updateSyncStatusBar('err','❌','Échec : '+err.message+'. Vérifiez l\'URL et les permissions du script.');
     showFlash('❌','Erreur de connexion. Vérifiez l\'URL.','err');
+    renderSyncBanner();
   }
 }
 
