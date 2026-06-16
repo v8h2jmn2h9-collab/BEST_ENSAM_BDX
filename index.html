@@ -289,16 +289,13 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
 ══════════════════════════════════════ -->
 <div class="page active" id="page-saisie">
 <div class="wrap">
-  <!-- SYNC BANNER -->
-  <div id="sync-banner" style="display:none"></div>
-
   <!-- KPIs -->
   <div class="kpi-row">
     <div class="kpi k-cp"><div class="kpi-glow"></div><div class="kpi-lbl">📤 Charges Perso</div><div class="kpi-val" id="k-cp">0,00 €</div><div class="kpi-sub">Carte personnelle</div></div>
     <div class="kpi k-pp"><div class="kpi-glow"></div><div class="kpi-lbl">📥 Produits Perso</div><div class="kpi-val" id="k-pp">0,00 €</div><div class="kpi-sub">Remboursements</div></div>
     <div class="kpi k-ca"><div class="kpi-glow"></div><div class="kpi-lbl">📤 Charges Asso</div><div class="kpi-val" id="k-ca">0,00 €</div><div class="kpi-sub">Carte association</div></div>
     <div class="kpi k-pa"><div class="kpi-glow"></div><div class="kpi-lbl">📥 Produits Asso</div><div class="kpi-val" id="k-pa">0,00 €</div><div class="kpi-sub">Subventions & recettes</div></div>
-    <div class="kpi k-sol"><div class="kpi-glow"></div><div class="kpi-lbl">⚖️ Solde Net</div><div class="kpi-val" id="k-sol">0,00 €</div><div class="kpi-sub">Produits − Charges</div></div>
+    <div class="kpi k-sol"><div class="kpi-glow"></div><div class="kpi-lbl">⚖️ Solde Asso</div><div class="kpi-val" id="k-sol">0,00 €</div><div class="kpi-sub">Produits Asso − Charges Asso</div></div>
   </div>
 
   <div class="content-grid">
@@ -649,13 +646,16 @@ const defaultCfg = {
   catProduits: ['Subventions','Aides privées','Ventes & Merch','Remboursements','Cotisations','Sponsoring','Soirée','Participation (fee)','Autres'],
   paiements:   ['Carte Asso','AE Compte Asso','Compte Lydia','Cash','Virement'],
   evenements:  ['Summer course','BSC Core team','BSC ASSO','Général'],
+  syncUrl:     'https://script.google.com/macros/s/AKfycbwMu-Jl3oGm5_tAUn5qI95SDXCjGMBmcK42k8VME-aB9H8N8AE4soxqg_5eXhh5hvnO/exec',
 };
 
 // ════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════
 let cfg     = JSON.parse(localStorage.getItem('best_cfg') || 'null') || {...defaultCfg};
-if (!cfg.syncUrl) cfg.syncUrl = '';
+// Force l'URL de sync pour tous les utilisateurs (même ceux avec un ancien localStorage)
+cfg.syncUrl = defaultCfg.syncUrl;
+saveCfg();
 let entries = JSON.parse(localStorage.getItem('best_entries5') || '[]');
 let filter  = 'all';
 let nextId  = entries.length ? Math.max(...entries.map(e=>e.id))+1 : 1;
@@ -892,7 +892,7 @@ function submitEntry() {
 function render() {
   const cp=sum('Perso','CHARGE'),pp=sum('Perso','PRODUIT');
   const ca=sum('Asso','CHARGE'), pa=sum('Asso','PRODUIT');
-  const sol=(pp+pa)-(cp+ca);
+  const sol=pa-ca; // Solde Asso uniquement
   document.getElementById('k-cp').textContent=fmt(cp);
   document.getElementById('k-pp').textContent=fmt(pp);
   document.getElementById('k-ca').textContent=fmt(ca);
