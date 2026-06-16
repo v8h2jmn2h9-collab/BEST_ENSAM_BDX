@@ -37,11 +37,33 @@ nav{
 .ntab{padding:7px 16px;border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:7px;transition:all .2s;display:flex;align-items:center;gap:6px;border:1px solid transparent;}
 .ntab:hover{background:rgba(255,255,255,.1);color:#fff;}
 .ntab.active{background:rgba(59,130,246,.2);color:#93c5fd;border-color:rgba(59,130,246,.3);}
-.nav-right{display:flex;gap:8px;}
+.nav-right{display:flex;gap:8px;align-items:center;}
 .btn-nav{padding:7px 13px;border-radius:7px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);}
 .btn-nav:hover{background:rgba(255,255,255,.14);color:#fff;transform:translateY(-1px);}
 .btn-nav.danger{border-color:rgba(239,68,68,.3);color:#fca5a5;}
 .btn-nav.danger:hover{background:rgba(239,68,68,.12);}
+.btn-nav.sync-ok{border-color:rgba(34,197,94,.4);color:#86efac;}
+.btn-nav.sync-err{border-color:rgba(239,68,68,.4);color:#fca5a5;}
+.btn-nav.sync-busy{opacity:.6;cursor:wait;}
+/* sync dot */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#64748b;transition:background .4s;flex-shrink:0;}
+.sync-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.7);}
+.sync-dot.err{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.6);}
+.sync-dot.busy{background:#f59e0b;animation:pulse-sync .7s ease-in-out infinite alternate;}
+@keyframes pulse-sync{from{opacity:.4;}to{opacity:1;}}
+/* sync settings card */
+.sync-url-input{width:100%;padding:10px 13px;border:2px solid var(--g200);border-radius:var(--r-sm);font-size:12px;font-family:monospace;outline:none;transition:all .2s;color:var(--g800);background:var(--g50);}
+.sync-url-input:focus{border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+.sync-status-bar{padding:10px 14px;border-radius:var(--r-sm);font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px;margin-top:10px;}
+.sync-status-bar.ok{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+.sync-status-bar.err{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+.sync-status-bar.idle{background:var(--g100);color:var(--g500);border:1px solid var(--g200);}
+.sync-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+.btn-sync-action{padding:9px 16px;border:none;border-radius:var(--r-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.btn-sync-action.primary{background:linear-gradient(135deg,var(--blue),var(--indigo));color:#fff;}
+.btn-sync-action.primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(29,78,216,.35);}
+.btn-sync-action.secondary{background:var(--g100);color:var(--g700);border:1px solid var(--g200);}
+.btn-sync-action.secondary:hover{background:var(--g200);}
 
 /* ── PAGES ───────────────────────────── */
 .page{display:none;}
@@ -236,6 +258,8 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
     <button class="ntab" onclick="goPage('reglages',this)">⚙️ Réglages</button>
   </div>
   <div class="nav-right">
+    <div class="sync-dot" id="sync-dot" title="État de la synchronisation"></div>
+    <button class="btn-nav" id="btn-sync-nav" onclick="manualSync()" title="Synchroniser avec Google Sheets">🔄 Sync</button>
     <button class="btn-nav" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn-nav danger" onclick="clearAll()">🗑 Effacer tout</button>
   </div>
@@ -409,6 +433,7 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
         <button class="sm-item" onclick="showPanel('categories',this)"><span class="ico">📂</span> Catégories</button>
         <button class="sm-item" onclick="showPanel('paiements',this)"><span class="ico">💳</span> Moyens de paiement</button>
         <button class="sm-item" onclick="showPanel('evenements',this)"><span class="ico">📅</span> Événements</button>
+        <button class="sm-item" onclick="showPanel('sync',this)"><span class="ico">🔗</span> Sync Cloud</button>
       </div>
     </div>
 
@@ -513,6 +538,73 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
         </div>
       </div>
 
+      <!-- ── SYNC CLOUD ── -->
+      <div class="s-panel" id="panel-sync">
+        <div class="s-card">
+          <div class="s-card-head">
+            <div><h3>🔗 Synchronisation Cloud</h3><p>Partagez les données en temps réel avec toute l'équipe via Google Sheets</p></div>
+          </div>
+          <div class="s-card-body">
+            <div class="field">
+              <label>URL de l'API Google Sheets (Apps Script)</label>
+              <input type="url" class="sync-url-input" id="cfg-sync-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+            </div>
+            <div class="sync-status-bar idle" id="sync-status-bar">
+              <span id="sync-status-icon">⚪</span>
+              <span id="sync-status-text">Aucune URL configurée. Entrez l'URL de votre script Google Apps Script.</span>
+            </div>
+            <div class="sync-actions">
+              <button class="btn-sync-action primary" onclick="testAndSaveSync()">💾 Enregistrer & Tester</button>
+              <button class="btn-sync-action secondary" onclick="manualSync()">🔄 Synchroniser maintenant</button>
+              <button class="btn-sync-action secondary" onclick="pushAllToCloud()">⬆ Pousser toutes les données locales</button>
+            </div>
+          </div>
+        </div>
+        <div class="info-card"><span class="ico">💡</span><div><strong>Comment ça marche ?</strong><br>1. Créez un Google Sheet et collez-y le script Apps Script fourni.<br>2. Déployez le script en tant qu'application web (accès : Tout le monde).<br>3. Copiez l'URL de déploiement et collez-la ici, puis cliquez sur "Enregistrer & Tester".<br>4. Toutes les saisies seront automatiquement partagées avec l'équipe !</div></div>
+        <div class="s-card">
+          <div class="s-card-head"><div><h3>📋 Script Google Apps Script</h3><p>Copiez ce code dans votre Google Sheet (Extensions → Apps Script)</p></div></div>
+          <div class="s-card-body">
+            <pre id="apps-script-code" style="background:var(--g900);color:#e2e8f0;padding:16px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre-wrap;">function doGet(e){
+  var s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Transactions');
+  if(!s)return resp([]);
+  var d=s.getDataRange().getValues();
+  if(d.length<=1)return resp([]);
+  var h=d[0],r=[];
+  for(var i=1;i&lt;d.length;i++){
+    var o={};for(var j=0;j&lt;h.length;j++)o[h[j]]=d[i][j];
+    o.id=Number(o.id);o.montant=Number(o.montant);o.ts=Number(o.ts);r.push(o);
+  }
+  return resp(r);
+}
+function doPost(e){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var s=ss.getSheetByName('Transactions');
+  if(!s){s=ss.insertSheet('Transactions');
+    s.appendRow(['id','date','type','compte','payer','evt','cat','montant','desc','remb','ts']);}
+  var p=JSON.parse(e.postData.contents);
+  if(p.action==='add'){
+    var x=p.entry;
+    s.appendRow([x.id,x.date,x.type,x.compte,x.payer,x.evt,x.cat,x.montant,x.desc,x.remb,x.ts]);
+  }else if(p.action==='delete'){
+    var d=s.getDataRange().getValues();
+    for(var i=1;i&lt;d.length;i++){if(Number(d[i][0])===Number(p.id)){s.deleteRow(i+1);break;}}
+  }else if(p.action==='sync_all'){
+    s.clearContents();
+    s.appendRow(['id','date','type','compte','payer','evt','cat','montant','desc','remb','ts']);
+    var ex=[...p.entries].reverse();
+    ex.forEach(function(x){s.appendRow([x.id,x.date,x.type,x.compte,x.payer,x.evt,x.cat,x.montant,x.desc,x.remb,x.ts]);});
+  }
+  return resp({status:'success'});
+}
+function resp(d){
+  return ContentService.createTextOutput(JSON.stringify(d))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+            <button class="btn-sync-action secondary" style="margin-top:10px" onclick="copyScript()">📋 Copier le script</button>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /settings-content -->
   </div>
 </div>
@@ -531,19 +623,21 @@ const defaultCfg = {
   year:        '2025–2026',
   tresorier:   'Enzo',
   membres:     ['Enzo','Méline','Nino','Corentin','Martin'],
-  catCharges:  ['Nourriture','Merch','Location','Transport','Logement','Publicité','Déplacements','Matériel','Autres'],
-  catProduits: ['Subventions','Aides privées','Ventes & Merch','Remboursements','Cotisations','Sponsoring','Autres'],
+  catCharges:  ['Nourriture','Merch','Location','Transport','Logement','Publicité','Déplacements','Matériel','Soirée','Autres'],
+  catProduits: ['Subventions','Aides privées','Ventes & Merch','Remboursements','Cotisations','Sponsoring','Soirée','Participation (fee)','Autres'],
   paiements:   ['Carte Asso','AE Compte Asso','Compte Lydia','Cash','Virement'],
-  evenements:  ['BSC Core team','BSC ASSO','Général'],
+  evenements:  ['Summer course','BSC Core team','BSC ASSO','Général'],
 };
 
 // ════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════
 let cfg     = JSON.parse(localStorage.getItem('best_cfg') || 'null') || {...defaultCfg};
+if (!cfg.syncUrl) cfg.syncUrl = '';
 let entries = JSON.parse(localStorage.getItem('best_entries5') || '[]');
 let filter  = 'all';
 let nextId  = entries.length ? Math.max(...entries.map(e=>e.id))+1 : 1;
+let _syncing = false;
 
 // ════════════════════════════════════════
 //  INIT
@@ -553,8 +647,13 @@ document.addEventListener('DOMContentLoaded', () => {
   applyNavTitles();
   rebuildFormDropdowns();
   loadSettingsUI();
-  if (!entries.length) loadExamples();
-  else render();
+  // Try loading from cloud first, fallback to local
+  if (cfg.syncUrl) {
+    loadFromCloud(true);
+  } else {
+    if (!entries.length) loadExamples();
+    else render();
+  }
 });
 
 // ════════════════════════════════════════
@@ -583,11 +682,13 @@ function loadSettingsUI() {
   document.getElementById('cfg-asso-sub').value   = cfg.assoSub;
   document.getElementById('cfg-year').value       = cfg.year;
   document.getElementById('cfg-tresorier').value  = cfg.tresorier;
+  document.getElementById('cfg-sync-url').value   = cfg.syncUrl || '';
   renderTags('membres',    'tags-membres',      'tag-perso');
   renderTags('catCharges', 'tags-cat-charges',  'tag-cat');
   renderTags('catProduits','tags-cat-produits', 'tag-cat');
   renderTags('paiements',  'tags-paiements',    'tag-pay');
   renderTags('evenements', 'tags-evenements',   'tag-evt');
+  updateSyncUI();
 }
 
 function renderTags(key, containerId, cls) {
@@ -752,10 +853,13 @@ function submitEntry() {
     setTimeout(()=>document.querySelector('.form-card').classList.remove('shake'),400);
     return;
   }
-  entries.unshift({id:nextId++,...v,ts:Date.now()});
+  const newEntry = {id:nextId++,...v,ts:Date.now()};
+  entries.unshift(newEntry);
   saveEntries(); resetForm(); render();
   const e=v.type==='CHARGE'?'📤':'📥';
   showFlash(e,`${v.type==='CHARGE'?'Charge':'Produit'} de ${fmt(v.montant)} enregistré${v.type==='PRODUIT'?'':'e'} !`,'ok');
+  // Push to cloud asynchronously
+  cloudAdd(newEntry);
 }
 
 // ════════════════════════════════════════
@@ -867,6 +971,8 @@ function delEntry(id){
   if(!confirm('Supprimer cette entrée ?'))return;
   entries=entries.filter(e=>e.id!==id);saveEntries();render();
   showFlash('🗑','Entrée supprimée','ok');
+  // Delete from cloud asynchronously
+  cloudDelete(id);
 }
 function setFilter(f,el){
   filter=f;
@@ -884,6 +990,147 @@ function clearAll(){
   if(!confirm('⚠️ Supprimer TOUTES les entrées ? Irréversible.'))return;
   entries=[];nextId=1;saveEntries();render();
   showFlash('🗑','Toutes les données effacées','err');
+  if(cfg.syncUrl) pushAllToCloud(true);
+}
+
+// ════════════════════════════════════════
+//  CLOUD SYNC — Google Sheets via Apps Script
+// ════════════════════════════════════════
+function setSyncDot(state){
+  const dot=document.getElementById('sync-dot');
+  const btn=document.getElementById('btn-sync-nav');
+  if(!dot)return;
+  dot.className='sync-dot '+state;
+  if(btn)btn.className='btn-nav'+(state==='ok'?' sync-ok':state==='err'?' sync-err':state==='busy'?' sync-busy':'');
+}
+
+function updateSyncUI(){
+  const bar=document.getElementById('sync-status-bar');
+  const icon=document.getElementById('sync-status-icon');
+  const text=document.getElementById('sync-status-text');
+  if(!bar)return;
+  if(!cfg.syncUrl){
+    bar.className='sync-status-bar idle';
+    icon.textContent='⚪';
+    text.textContent='Aucune URL configurée.';
+    setSyncDot('');
+  } else {
+    bar.className='sync-status-bar ok';
+    icon.textContent='✅';
+    text.textContent='URL configurée — synchronisation automatique activée.';
+    setSyncDot('ok');
+  }
+}
+
+async function cloudPost(payload){
+  if(!cfg.syncUrl) return;
+  // Google Apps Script requires no-cors for POST from browser
+  // We use a proxy approach: encode as form data (text/plain trick)
+  try{
+    await fetch(cfg.syncUrl,{
+      method:'POST',
+      body:JSON.stringify(payload),
+      headers:{'Content-Type':'text/plain'} // avoids CORS preflight
+    });
+  }catch(err){
+    // Silent fail — local data is always the source of truth
+    console.warn('Sync cloud POST failed:',err);
+  }
+}
+
+async function cloudAdd(entry){
+  if(!cfg.syncUrl)return;
+  setSyncDot('busy');
+  await cloudPost({action:'add',entry});
+  setSyncDot('ok');
+}
+
+async function cloudDelete(id){
+  if(!cfg.syncUrl)return;
+  setSyncDot('busy');
+  await cloudPost({action:'delete',id});
+  setSyncDot('ok');
+}
+
+async function loadFromCloud(isInit){
+  if(!cfg.syncUrl)return;
+  setSyncDot('busy');
+  updateSyncStatusBar('busy','🔄','Chargement des données depuis le cloud…');
+  try{
+    const r=await fetch(cfg.syncUrl+'?t='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      entries=[...data].reverse(); // cloud returns oldest-first
+      nextId=Math.max(...entries.map(e=>e.id))+1;
+      saveEntries();
+    } else if(isInit && !entries.length){
+      loadExamples();
+    }
+    render();
+    setSyncDot('ok');
+    updateSyncStatusBar('ok','✅','Données synchronisées depuis le cloud !');
+    if(!isInit) showFlash('🔄','Synchronisation réussie !','ok');
+  }catch(err){
+    setSyncDot('err');
+    updateSyncStatusBar('err','❌','Erreur de connexion : '+err.message);
+    if(isInit){
+      if(!entries.length)loadExamples();else render();
+    } else {
+      showFlash('❌','Erreur de synchro : '+err.message,'err');
+    }
+  }
+}
+
+function updateSyncStatusBar(state,icon,text){
+  const bar=document.getElementById('sync-status-bar');
+  const ic=document.getElementById('sync-status-icon');
+  const tx=document.getElementById('sync-status-text');
+  if(!bar)return;
+  bar.className='sync-status-bar '+state;
+  if(ic)ic.textContent=icon;
+  if(tx)tx.textContent=text;
+}
+
+async function manualSync(){
+  if(!cfg.syncUrl){showFlash('⚠️','Aucune URL de sync configurée. Allez dans ⚙️ Réglages → 🔗 Sync Cloud.','err');return;}
+  await loadFromCloud(false);
+}
+
+async function pushAllToCloud(silent){
+  if(!cfg.syncUrl)return;
+  setSyncDot('busy');
+  await cloudPost({action:'sync_all',entries});
+  setSyncDot('ok');
+  if(!silent)showFlash('⬆','Toutes les données poussées vers le cloud !','ok');
+}
+
+async function testAndSaveSync(){
+  const url=document.getElementById('cfg-sync-url').value.trim();
+  if(!url){showFlash('⚠️','Entrez une URL valide','err');return;}
+  cfg.syncUrl=url;
+  saveCfg();
+  updateSyncStatusBar('busy','🔄','Test de connexion en cours…');
+  setSyncDot('busy');
+  try{
+    const r=await fetch(url+'?t='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    setSyncDot('ok');
+    updateSyncStatusBar('ok','✅','Connexion réussie ! '+(Array.isArray(data)?data.length+' entrée(s) trouvée(s) dans le cloud.':'Script connecté.'));
+    showFlash('✅','Sync Cloud configurée avec succès !','ok');
+  }catch(err){
+    setSyncDot('err');
+    updateSyncStatusBar('err','❌','Échec : '+err.message+'. Vérifiez l\'URL et les permissions du script.');
+    showFlash('❌','Erreur de connexion. Vérifiez l\'URL.','err');
+  }
+}
+
+function copyScript(){
+  const code=document.getElementById('apps-script-code').textContent
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  navigator.clipboard.writeText(code).then(()=>showFlash('📋','Script copié dans le presse-papiers !','ok'))
+    .catch(()=>showFlash('❌','Copie impossible, sélectionnez le texte manuellement.','err'));
 }
 function exportCSV(){
   if(!entries.length){showFlash('⚠️','Aucune donnée à exporter','err');return;}
@@ -900,13 +1147,19 @@ function exportCSV(){
   showFlash('⬇','Export CSV téléchargé !','ok');
 }
 function loadExamples(){
+  // Données réelles importées depuis le CSV BEST_Tresorerie_2026-06-16.csv
   const ex=[
-    {compte:'Asso',type:'PRODUIT',cat:'Subventions',desc:'FSDIE 1er semestre — ENSAM',montant:588.57,payer:'AE Compte Asso',evt:'BSC ASSO',date:'2024-12-06',remb:'N/A'},
-    {compte:'Asso',type:'CHARGE',cat:'Logement',desc:'Hébergement membres BSC ASSO',montant:120.00,payer:'Carte Asso',evt:'BSC ASSO',date:'2025-02-15',remb:'N/A'},
-    {compte:'Asso',type:'CHARGE',cat:'Merch',desc:'Goodies & merchandising BEST',montant:200.00,payer:'Carte Asso',evt:'BSC ASSO',date:'2025-03-01',remb:'N/A'},
-    {compte:'Perso',type:'CHARGE',cat:'Nourriture',desc:'Courses Carrefour réunion',montant:25.80,payer:'Enzo',evt:'BSC Core team',date:'2025-09-15',remb:'Non'},
-    {compte:'Perso',type:'CHARGE',cat:'Merch',desc:'Impression t-shirts BEST',montant:45.00,payer:'Martin',evt:'BSC Core team',date:'2025-10-05',remb:'Non'},
-    {compte:'Perso',type:'PRODUIT',cat:'Remboursements',desc:'Remboursement frais par AE',montant:200.00,payer:'Enzo',evt:'BSC Core team',date:'2025-10-10',remb:'N/A'},
+    {compte:'Asso',type:'PRODUIT',cat:'Soirée',         desc:'ancien',             montant:1717.00, payer:'AE Compte Asso', evt:'Summer course', date:'2026-01-30', remb:'N/A'},
+    {compte:'Asso',type:'PRODUIT',cat:'Soirée',         desc:'point',              montant:3305.00, payer:'AE Compte Asso', evt:'Summer course', date:'2026-05-07', remb:'N/A'},
+    {compte:'Asso',type:'PRODUIT',cat:'Subventions',    desc:'FSDIE',              montant:1000.00, payer:'AE Compte Asso', evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'PRODUIT',cat:'Participation (fee)',desc:'Eva-Maria',      montant:56.00,   payer:'AE Compte Asso', evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'PRODUIT',cat:'Participation (fee)',desc:'Maria',          montant:56.00,   payer:'AE Compte Asso', evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'course metro',       montant:588.57,  payer:'Carte Asso',    evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'Course 2',           montant:50.77,   payer:'Carte Asso',    evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'Course 3 Leclerc',   montant:50.37,   payer:'Carte Asso',    evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'cannelés',           montant:36.00,   payer:'Carte Asso',    evt:'Summer course', date:'2026-06-16', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'Boulangerie',        montant:44.50,   payer:'Carte Asso',    evt:'Summer course', date:'2026-06-15', remb:'N/A'},
+    {compte:'Asso',type:'CHARGE', cat:'Nourriture',     desc:'boulangerie',        montant:44.50,   payer:'Carte Asso',    evt:'Summer course', date:'2026-06-16', remb:'N/A'},
   ];
   ex.forEach(e=>entries.push({id:nextId++,...e,ts:Date.now()}));
   entries.reverse();saveEntries();render();
