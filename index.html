@@ -136,6 +136,7 @@ nav{
 
 .sel-perso{border-color:#fbbf24!important;background:#fffbeb!important;}
 .sel-asso{border-color:#60a5fa!important;background:#eff6ff!important;}
+.sel-cash{border-color:#a78bfa!important;background:#f5f3ff!important;}
 .sel-ch{border-color:#f87171!important;background:#fef2f2!important;}
 .sel-pr{border-color:#4ade80!important;background:#f0fdf4!important;}
 
@@ -168,6 +169,7 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;white-space:nowrap;}
 .b-perso{background:#fef9c3;color:#854d0e;}
 .b-asso{background:#dbeafe;color:#1e40af;}
+.b-cash{background:#ede9fe;color:#5b21b6;}
 .b-charge{background:#fee2e2;color:#991b1b;}
 .b-produit{background:#dcfce7;color:#14532d;}
 .b-non{background:#fed7aa;color:#9a3412;}
@@ -276,6 +278,7 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
   </div>
   <div class="nav-tabs">
     <button class="ntab active" onclick="goPage('saisie',this)">✏️ Saisie</button>
+    <button class="ntab" onclick="goPage('perso',this)">👤 Comptes Perso</button>
     <button class="ntab" onclick="goPage('bilan',this)">📊 Bilan</button>
     <button class="ntab" onclick="goPage('reglages',this)">⚙️ Réglages</button>
   </div>
@@ -318,6 +321,7 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
               <option value="">— Choisir —</option>
               <option value="Perso">💳 Perso</option>
               <option value="Asso">🏦 Asso</option>
+              <option value="Cash">💵 Cash</option>
             </select>
           </div>
           <div class="field">
@@ -390,6 +394,7 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
         <button class="ftab active" onclick="setFilter('all',this)">Tout</button>
         <button class="ftab" onclick="setFilter('Perso',this)">💳 Perso</button>
         <button class="ftab" onclick="setFilter('Asso',this)">🏦 Asso</button>
+        <button class="ftab" onclick="setFilter('Cash',this)">💵 Cash</button>
         <button class="ftab" onclick="setFilter('CHARGE',this)">📤 Charges</button>
         <button class="ftab" onclick="setFilter('PRODUIT',this)">📥 Produits</button>
         <button class="ftab" onclick="setFilter('Non',this)">🟠 À rembourser</button>
@@ -410,6 +415,20 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
       </div>
     </div>
   </div><!-- /content-grid -->
+</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE — COMPTES PERSO
+══════════════════════════════════════ -->
+<div class="page" id="page-perso">
+<div class="wrap">
+  <div class="perso-hero">
+    <div><div class="perso-hero-label">📤 Total Charges Perso + Cash</div><div class="perso-hero-val" id="ph-ch">0,00 €</div></div>
+    <div><div class="perso-hero-label">📥 Total Produits Perso + Cash</div><div class="perso-hero-val" id="ph-pr">0,00 €</div></div>
+    <div><div class="perso-hero-label">⚖️ Solde global membres</div><div class="perso-hero-val" id="ph-sol">0,00 €</div></div>
+  </div>
+  <div class="member-grid" id="member-grid"></div>
 </div>
 </div>
 
@@ -649,7 +668,7 @@ const defaultCfg = {
   catProduits: ['Subventions','Aides privées','Ventes & Merch','Remboursements','Cotisations','Sponsoring','Soirée','Participation (fee)','Autres'],
   paiements:   ['Carte Asso','AE Compte Asso','Compte Lydia','Cash','Virement'],
   evenements:  ['Summer course','BSC Core team','BSC ASSO','Général'],
-  syncUrl:     'https://script.google.com/macros/s/AKfycbwMu-Jl3oGm5_tAUn5qI95SDXCjGMBmcK42k8VME-aB9H8N8AE4soxqg_5eXhh5hvnO/exec',
+  syncUrl:     'https://script.google.com/macros/s/AKfycbxrBifAuuNijuX8Cz5mjMbYaEDFCX-BCzyr96X6LhRA7ZHDoLfnDlXho049l71YJGbYOw/exec',
 };
 
 // ════════════════════════════════════════
@@ -692,6 +711,7 @@ function goPage(id, el) {
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   if (id === 'bilan') renderBilan();
+  if (id === 'perso') renderPerso();
 }
 
 // ════════════════════════════════════════
@@ -808,6 +828,9 @@ function buildPayerSelect() {
   } else if (compte === 'Asso') {
     options = cfg.paiements;
     document.getElementById('payer-label').textContent = 'Moyen de paiement';
+  } else if (compte === 'Cash') {
+    options = cfg.membres;
+    document.getElementById('payer-label').textContent = 'Qui détient le cash';
   } else {
     options = [...cfg.membres, ...cfg.paiements];
     document.getElementById('payer-label').textContent = 'Payé par';
@@ -833,7 +856,7 @@ function liveStyle() {
   const t = document.getElementById('f-type').value;
   const pill = document.getElementById('type-pill');
   const btn  = document.getElementById('btn-sub');
-  document.getElementById('f-compte').className = c==='Perso'?'sel-perso':c==='Asso'?'sel-asso':'';
+  document.getElementById('f-compte').className = c==='Perso'?'sel-perso':c==='Asso'?'sel-asso':c==='Cash'?'sel-cash':'';
   document.getElementById('f-type').className   = t==='CHARGE'?'sel-ch':t==='PRODUIT'?'sel-pr':'';
 
   // Rebuild cat selon type
@@ -893,9 +916,11 @@ function submitEntry() {
 //  RENDER — Journal + KPIs
 // ════════════════════════════════════════
 function render() {
-  const cp=sum('Perso','CHARGE'),pp=sum('Perso','PRODUIT');
-  const ca=sum('Asso','CHARGE'), pa=sum('Asso','PRODUIT');
-  const sol=pa-ca; // Solde Asso uniquement
+  const cp=sum('Perso','CHARGE'),  pp=sum('Perso','PRODUIT');
+  const ca=sum('Asso','CHARGE'),   pa=sum('Asso','PRODUIT');
+  const cc=sum('Cash','CHARGE'),   pc=sum('Cash','PRODUIT');
+  const sol=pa-ca;
+  const cshSol=pc-cc;
   document.getElementById('k-cp').textContent=fmt(cp);
   document.getElementById('k-pp').textContent=fmt(pp);
   document.getElementById('k-ca').textContent=fmt(ca);
@@ -903,10 +928,15 @@ function render() {
   const se=document.getElementById('k-sol');
   se.textContent=(sol>=0?'+':'')+fmt(sol);
   se.style.color=sol>=0?'#16a34a':'#dc2626';
+  document.getElementById('k-csh-c').textContent=fmt(cc);
+  document.getElementById('k-csh-p').textContent=fmt(pc);
+  const sc=document.getElementById('k-csh-sol');
+  sc.textContent=(cshSol>=0?'+':'')+fmt(cshSol);
+  sc.style.color=cshSol>=0?'#16a34a':'#dc2626';
 
   const rows=entries.filter(e=>{
     if(filter==='all')return true;
-    if(filter==='Perso'||filter==='Asso')return e.compte===filter;
+    if(filter==='Perso'||filter==='Asso'||filter==='Cash')return e.compte===filter;
     if(filter==='CHARGE'||filter==='PRODUIT')return e.type===filter;
     if(filter==='Non')return e.remb==='Non';
     return true;
@@ -919,13 +949,14 @@ function render() {
   if(!rows.length){empty.style.display='block';tbl.style.display='none';}
   else{empty.style.display='none';tbl.style.display='table';}
 
+  const compteIcon=c=>c==='Perso'?'💳':c==='Cash'?'💵':'🏦';
   tbody.innerHTML=rows.map(e=>{
     const ch=e.type==='CHARGE';
     const n=entries.indexOf(e);
     const rb=e.remb.toLowerCase().replace(/[^a-z]/g,'');
     return `<tr class="${ch?'tr-ch':'tr-pr'}">
       <td style="color:var(--g400);font-size:10px;font-weight:700">${entries.length-n}</td>
-      <td><span class="badge b-${e.compte.toLowerCase()}">${e.compte==='Perso'?'💳':'🏦'} ${e.compte}</span></td>
+      <td><span class="badge b-${e.compte.toLowerCase()}">${compteIcon(e.compte)} ${e.compte}</span></td>
       <td><span class="badge b-${e.type.toLowerCase()}">${ch?'📤':'📥'} ${e.type}</span></td>
       <td style="font-weight:600;font-size:11px">${e.cat}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--g600)" title="${e.desc}">${e.desc}</td>
@@ -937,6 +968,79 @@ function render() {
       <td><button class="del-btn" onclick="delEntry(${e.id})">×</button></td>
     </tr>`;
   }).join('');
+}
+
+// ════════════════════════════════════════
+//  RENDER — Comptes Perso
+// ════════════════════════════════════════
+function renderPerso() {
+  // Récupère les entrées Perso + Cash
+  const persoCash = entries.filter(e => e.compte === 'Perso' || e.compte === 'Cash');
+  const totalCh = persoCash.filter(e=>e.type==='CHARGE').reduce((s,e)=>s+e.montant,0);
+  const totalPr = persoCash.filter(e=>e.type==='PRODUIT').reduce((s,e)=>s+e.montant,0);
+  const totalSol = totalPr - totalCh;
+
+  document.getElementById('ph-ch').textContent = fmt(totalCh);
+  document.getElementById('ph-pr').textContent = fmt(totalPr);
+  const ps = document.getElementById('ph-sol');
+  ps.textContent = (totalSol>=0?'+':'')+fmt(totalSol);
+
+  // Tous les membres + repasse sur les payers uniques dans Cash/Perso
+  const memberNames = new Set([...cfg.membres]);
+  persoCash.forEach(e => { if(e.payer) memberNames.add(e.payer); });
+
+  const grid = document.getElementById('member-grid');
+  grid.innerHTML = '';
+
+  [...memberNames].forEach(name => {
+    const memberEntries = persoCash.filter(e => e.payer === name);
+    if (!memberEntries.length && !cfg.membres.includes(name)) return;
+    const charges = memberEntries.filter(e=>e.type==='CHARGE').reduce((s,e)=>s+e.montant,0);
+    const produits = memberEntries.filter(e=>e.type==='PRODUIT').reduce((s,e)=>s+e.montant,0);
+    const solde = produits - charges;
+    const soldeCls = solde > 0 ? 'pos' : solde < 0 ? 'neg' : 'zero';
+    const soldeLabel = solde >= 0 ? '+'+fmt(solde) : '-'+fmt(Math.abs(solde));
+    const initiale = name.charAt(0).toUpperCase();
+
+    const recentTrs = [...memberEntries]
+      .sort((a,b)=>b.ts-a.ts)
+      .slice(0,8)
+      .map(e => {
+        const ch = e.type==='CHARGE';
+        return `<div class="member-tr">
+          <div class="member-tr-left">
+            <div class="member-tr-desc">${e.desc || e.cat}</div>
+            <div class="member-tr-meta">${e.compte} • ${e.cat} • ${fmtDate(e.date)}</div>
+          </div>
+          <div class="member-tr-amt" style="color:${ch?'#dc2626':'#16a34a'}">${ch?'−':'+'}${fmt(e.montant)}</div>
+        </div>`;
+      }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'member-card';
+    card.innerHTML = `
+      <div class="member-card-head">
+        <div class="member-card-name">
+          <div class="member-avatar">${initiale}</div>
+          ${name}
+        </div>
+        <div class="member-solde ${soldeCls}">${soldeLabel}</div>
+      </div>
+      <div class="member-stats">
+        <div class="member-stat">
+          <div class="member-stat-lbl">📤 Charges</div>
+          <div class="member-stat-val ch">${fmt(charges)}</div>
+        </div>
+        <div class="member-stat">
+          <div class="member-stat-lbl">📥 Produits</div>
+          <div class="member-stat-val pr">${fmt(produits)}</div>
+        </div>
+      </div>
+      <div class="member-transactions">
+        ${recentTrs || '<div style="padding:16px;text-align:center;color:var(--g400);font-size:11px">💭 Aucune transaction</div>'}
+      </div>`;
+    grid.appendChild(card);
+  });
 }
 
 // ════════════════════════════════════════
