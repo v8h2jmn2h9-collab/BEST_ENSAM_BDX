@@ -183,6 +183,42 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
 .empty-st .ei{font-size:32px;margin-bottom:8px;}
 .empty-st p{font-size:12px;line-height:1.6;}
 
+/* ── COMPTES PERSO PAGE ─────────────── */
+.perso-hero{
+  background:linear-gradient(135deg,var(--navy),#1e3a8a);
+  border-radius:var(--r-lg);padding:22px 26px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
+  margin-bottom:22px;box-shadow:var(--sh-xl);
+}
+.perso-hero-label{font-size:10px;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.perso-hero-val{font-size:22px;font-weight:900;letter-spacing:-1px;color:#fff;}
+
+.member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;}
+.member-card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.member-card:hover{transform:translateY(-3px);box-shadow:var(--sh-xl);}
+.member-card-head{background:linear-gradient(135deg,#1e3a8a,#312e81);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+.member-card-name{display:flex;align-items:center;gap:10px;color:#fff;font-size:15px;font-weight:700;}
+.member-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.3);flex-shrink:0;}
+.member-solde{font-size:18px;font-weight:900;letter-spacing:-1px;}
+.member-solde.pos{color:#86efac;}
+.member-solde.neg{color:#fca5a5;}
+.member-solde.zero{color:#fcd34d;}
+.member-stats{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--g100);}
+.member-stat{padding:12px 16px;text-align:center;}
+.member-stat:first-child{border-right:1px solid var(--g100);}
+.member-stat-lbl{font-size:9px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.member-stat-val{font-size:16px;font-weight:800;}
+.member-stat-val.ch{color:#dc2626;}
+.member-stat-val.pr{color:#16a34a;}
+.member-transactions{max-height:220px;overflow-y:auto;}
+.member-tr{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--g100);transition:background .15s;}
+.member-tr:hover{background:var(--g50);}
+.member-tr:last-child{border-bottom:none;}
+.member-tr-left{flex:1;min-width:0;}
+.member-tr-desc{font-size:12px;font-weight:600;color:var(--g800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.member-tr-meta{font-size:10px;color:var(--g400);margin-top:2px;}
+.member-tr-amt{font-size:13px;font-weight:800;margin-left:12px;flex-shrink:0;}
+
 /* ── BILAN PAGE ──────────────────────── */
 .bilan-hero{background:linear-gradient(135deg,var(--navy),#1e3a8a);border-radius:var(--r-lg);padding:22px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px;box-shadow:var(--sh-xl);}
 .bh-item{text-align:center;}
@@ -296,12 +332,16 @@ td{padding:9px 12px;font-size:11px;color:var(--g700);vertical-align:middle;}
 <div class="page active" id="page-saisie">
 <div class="wrap">
   <!-- KPIs -->
-  <div class="kpi-row">
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);">
     <div class="kpi k-cp"><div class="kpi-glow"></div><div class="kpi-lbl">📤 Charges Perso</div><div class="kpi-val" id="k-cp">0,00 €</div><div class="kpi-sub">Carte personnelle</div></div>
     <div class="kpi k-pp"><div class="kpi-glow"></div><div class="kpi-lbl">📥 Produits Perso</div><div class="kpi-val" id="k-pp">0,00 €</div><div class="kpi-sub">Remboursements</div></div>
     <div class="kpi k-ca"><div class="kpi-glow"></div><div class="kpi-lbl">📤 Charges Asso</div><div class="kpi-val" id="k-ca">0,00 €</div><div class="kpi-sub">Carte association</div></div>
     <div class="kpi k-pa"><div class="kpi-glow"></div><div class="kpi-lbl">📥 Produits Asso</div><div class="kpi-val" id="k-pa">0,00 €</div><div class="kpi-sub">Subventions & recettes</div></div>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-top:-8px;">
     <div class="kpi k-sol"><div class="kpi-glow"></div><div class="kpi-lbl">⚖️ Solde Asso</div><div class="kpi-val" id="k-sol">0,00 €</div><div class="kpi-sub">Produits Asso − Charges Asso</div></div>
+    <div class="kpi" style="border-top-color:#a78bfa;"><div class="kpi-glow" style="background:#a78bfa;"></div><div class="kpi-lbl">💵 Cash (charges/produits)</div><div class="kpi-val" id="k-csh-c" style="color:#7c3aed;">0,00 €</div><div class="kpi-sub" id="k-csh-p">Produits : 0,00 €</div></div>
+    <div class="kpi" style="border-top-color:#f97316;"><div class="kpi-glow" style="background:#f97316;"></div><div class="kpi-lbl">⚖️ Solde Cash</div><div class="kpi-val" id="k-csh-sol" style="color:#ea580c;">0,00 €</div><div class="kpi-sub">Produits Cash − Charges Cash</div></div>
   </div>
 
   <div class="content-grid">
@@ -928,11 +968,15 @@ function render() {
   const se=document.getElementById('k-sol');
   se.textContent=(sol>=0?'+':'')+fmt(sol);
   se.style.color=sol>=0?'#16a34a':'#dc2626';
-  document.getElementById('k-csh-c').textContent=fmt(cc);
-  document.getElementById('k-csh-p').textContent=fmt(pc);
+  const kcshC=document.getElementById('k-csh-c');
+  const kcshP=document.getElementById('k-csh-p');
   const sc=document.getElementById('k-csh-sol');
-  sc.textContent=(cshSol>=0?'+':'')+fmt(cshSol);
-  sc.style.color=cshSol>=0?'#16a34a':'#dc2626';
+  if(kcshC) kcshC.textContent=fmt(cc);
+  if(kcshP) kcshP.textContent='Produits : '+fmt(pc);
+  if(sc){
+    sc.textContent=(cshSol>=0?'+':'')+fmt(cshSol);
+    sc.style.color=cshSol>=0?'#16a34a':'#dc2626';
+  }
 
   const rows=entries.filter(e=>{
     if(filter==='all')return true;
@@ -1228,13 +1272,14 @@ async function silentSync(){
 
 async function cloudPost(payload){
   if(!cfg.syncUrl) return;
-  // Google Apps Script requires no-cors for POST from browser
-  // We use a proxy approach: encode as form data (text/plain trick)
+  // Google Apps Script: use no-cors mode for POST to avoid CORS preflight errors.
+  // The response is opaque (unreadable) but the action will execute on the server.
   try{
     await fetch(cfg.syncUrl,{
       method:'POST',
+      mode:'no-cors',
       body:JSON.stringify(payload),
-      headers:{'Content-Type':'text/plain'} // avoids CORS preflight
+      headers:{'Content-Type':'text/plain'}
     });
   }catch(err){
     // Silent fail — local data is always the source of truth
